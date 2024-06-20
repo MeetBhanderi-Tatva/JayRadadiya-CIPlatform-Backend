@@ -27,12 +27,6 @@ namespace CI_Platform.Service.Interface
 
         bool ValidateToken(string token, out JwtSecurityToken jwtSecurityToken);
 
-        Task<JsonResult> GetAddMissionView();
-
-        Task<JsonResult> GetCitiesByCountry(int countryId);
-
-        Task<JsonResult> AddMission(CreateMissionModel model);
-
-        Task<JsonResult> GetAllMissions(MissionFilter model);
+        
     }
 }

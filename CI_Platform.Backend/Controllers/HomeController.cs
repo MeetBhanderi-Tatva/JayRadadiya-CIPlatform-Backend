@@ -11,17 +11,17 @@ namespace CI_Platform.Backend.Controllers
     public class HomeController : Controller
     {
 
-        private readonly IUserService _userService;
+        private readonly IMissionService _missionService;
 
-        public HomeController(IUserService userService)
+        public HomeController(IMissionService missionService)
         {
-            _userService = userService;
+            _missionService = missionService;
         }
         [HttpGet]
         [Route("mission")]
         public async Task<IActionResult> GetAddMissionView()
         {
-            return await _userService.GetAddMissionView();
+            return await _missionService.GetAddMissionView();
         }
 
         /// <summary>
@@ -33,21 +33,21 @@ namespace CI_Platform.Backend.Controllers
         [Route("cities/{countryId:int}")]
         public async Task<IActionResult> GetCitiesByCountry(int countryId)
         {
-            return await _userService.GetCitiesByCountry(countryId);
+            return await _missionService.GetCitiesByCountry(countryId);
         }
 
         [HttpPost]
         [Route("mission")]
         public async Task<IActionResult> AddMission([FromForm] CreateMissionModel model)
         {
-            return await _userService.AddMission(model);
+            return await _missionService.AddMission(model);
         }
 
         [HttpGet]
         [Route("missions")]
         public async Task<IActionResult> GetAllMissions([FromQuery]MissionFilter model)
         {
-            return await _userService.GetAllMissions(model);
+            return await _missionService.GetAllMissions(model);
         }
     }
 }

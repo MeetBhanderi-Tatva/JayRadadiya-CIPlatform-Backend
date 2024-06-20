@@ -40,7 +40,7 @@ namespace CI_Platform.Service
 
                 return true;
             }
-            catch
+            catch(Exception)
             {
                 throw;
             }

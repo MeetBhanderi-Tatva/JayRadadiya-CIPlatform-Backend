@@ -28,6 +28,7 @@ namespace CI_Platform.Service
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepo;
+        private readonly ICityRepository _cityRepo;
         private readonly IEmailService _emailService;
         public IConfiguration _configuration;
         public IMapper _mapper;
@@ -42,9 +43,10 @@ namespace CI_Platform.Service
     {
         ".mp4", ".mov", ".wmv", ".flv", ".avi", ".mkv", ".webm", ".mpeg", ".mpg", ".m4v"
     };
-        public UserService(IUserRepository userRepository, IConfiguration config, IMapper mapper, IEmailService emailService, HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
+        public UserService(IUserRepository userRepository,ICityRepository cityRepository, IConfiguration config, IMapper mapper, IEmailService emailService, HttpClient httpClient, IHttpContextAccessor httpContextAccessor)
         {
             _userRepo = userRepository;
+            _cityRepo = cityRepository;
             _emailService = emailService;
             _configuration = config;
             _mapper = mapper;
@@ -52,12 +54,7 @@ namespace CI_Platform.Service
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public string GetUserId()
-            {
-            var user = _httpContextAccessor.HttpContext?.User;
-            return user?.FindFirst("userId")?.Value;
-        }
-
+        
         public async Task<JsonResult> UserLoginAsync(LoginRequest model)
         {
             try
@@ -90,12 +87,12 @@ namespace CI_Platform.Service
                     StatusCode = HttpStatusCode.OK.ToString(),
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 return new JsonResult(new ApiResponse<string>
                 {
                     Result = false,
-                    Message = "Internal server error",
+                    Message = ex.Message.ToString(),
                     StatusCode = HttpStatusCode.InternalServerError.ToString(),
                 });
             }
@@ -120,9 +117,9 @@ namespace CI_Platform.Service
 
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
-            catch
+            catch (Exception)
             {
-                throw new Exception();
+                throw;
             }
         }
         public async Task<JsonResult> RegisterUserAsync(RegisterRequest model)
@@ -151,7 +148,7 @@ namespace CI_Platform.Service
                     IpApiResponse locationInfo = JsonConvert.DeserializeObject<IpApiResponse>(result);
 
                     // Access the city property
-                    var city = await _userRepo.GetCityByName(locationInfo.City);
+                    var city = await _cityRepo.GetCityByName(locationInfo.City);
                     if (city == null)
                     {
                         return new JsonResult(new ApiResponse<string>
@@ -186,12 +183,12 @@ namespace CI_Platform.Service
                     StatusCode = HttpStatusCode.OK.ToString(),
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 return new JsonResult(new ApiResponse<string>
                 {
                     Result = false,
-                    Message = "Internal server error",
+                    Message = ex.Message.ToString(),
                     StatusCode = HttpStatusCode.InternalServerError.ToString(),
                 });
             }
@@ -228,12 +225,12 @@ namespace CI_Platform.Service
                     StatusCode = HttpStatusCode.OK.ToString(),
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 return new JsonResult(new ApiResponse<string>
                 {
                     Result = false,
-                    Message = "Internal server error",
+                    Message = ex.Message.ToString(),
                     StatusCode = HttpStatusCode.InternalServerError.ToString(),
                 });
             }
@@ -270,12 +267,12 @@ namespace CI_Platform.Service
                     StatusCode = HttpStatusCode.OK.ToString(),
                 });
             }
-            catch
+            catch (Exception ex)
             {
                 return new JsonResult(new ApiResponse<string>
                 {
                     Result = false,
-                    Message = "Internal server error",
+                    Message = ex.Message.ToString(),
                     StatusCode = HttpStatusCode.InternalServerError.ToString(),
                 });
             }
@@ -297,7 +294,7 @@ namespace CI_Platform.Service
                 }
                 return false;
             }
-            catch { throw new Exception(); }
+            catch (Exception) { throw; }
         }
         public bool ValidateToken(string token, out JwtSecurityToken jwtSecurityToken)
         {
@@ -328,271 +325,10 @@ namespace CI_Platform.Service
                 jwtSecurityToken = null!;
                 return false;
             }
-            catch
+            catch (Exception)
             {
-                throw new Exception();
+                throw;
             }
         }
-        public async Task<JsonResult> GetAddMissionView()
-        {
-            try
-            {
-                var countries = await _userRepo.GetCountries();
-                var themes = await _userRepo.GetThemes();
-                var skills = await _userRepo.GetSkills();
-                AddMissionViewModel model = new()
-                {
-                    Countries = countries,
-                    Themes = themes,
-                    Skills = skills,
-                };
-                return new JsonResult(new ApiResponse<AddMissionViewModel>
-                {
-                    Data = model,
-                    Result = true,
-                    Message = "",
-                    StatusCode = HttpStatusCode.OK.ToString(),
-                });
-            }
-            catch
-            {
-                return new JsonResult(new ApiResponse<string>
-                {
-                    Result = false,
-                    Message = "Internal server error",
-                    StatusCode = HttpStatusCode.InternalServerError.ToString(),
-                });
-            }
-        }
-        public async Task<JsonResult> GetCitiesByCountry(int countryId)
-        {
-            try
-            {
-                var userId = GetUserId();
-                var cities = await _userRepo.GetCitiesByCountry(countryId);
-                return new JsonResult(new ApiResponse<ICollection<CityViewModel>>
-                {
-                    Data = cities,
-                    Result = true,
-                    Message = "",
-                    StatusCode = HttpStatusCode.OK.ToString(),
-                });
-            }
-            catch
-            {
-                return new JsonResult(new ApiResponse<string>
-                {
-                    Result = false,
-                    Message = "Internal server error",
-                    StatusCode = HttpStatusCode.InternalServerError.ToString(),
-                });
-            }
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="model"></param>
-        /// <returns> </returns>
-        public async Task<JsonResult> AddMission(CreateMissionModel model)
-        {
-            using (var transaction = _userRepo.BeginTransaction())
-                try
-                {
-                    Mission mission = _mapper.Map<Mission>(model);
-                    MissionMedia missionMedia = new();
-                    // Check if exactly 2 files are uploaded
-                    if (model.Images.Count != 2)
-                    {
-                        return new JsonResult(new ApiResponse<string>
-                        {
-                            Result = false,
-                            Message = "Please upload one image and one video",
-                            StatusCode = HttpStatusCode.BadRequest.ToString(),
-                        });
-                    }
-                    else
-                    {
-                        bool hasImage = false;
-                        bool hasVideo = false;
-
-                        foreach (var file in model.Images)
-                        {
-                            string extension = Path.GetExtension(file.FileName).ToLower();
-
-                            if (ImageExtensions.Contains(extension))
-                            {
-                                hasImage = true;
-                            }
-                            else if (VideoExtensions.Contains(extension))
-                            {
-                                hasVideo = true;
-                            }
-                            else
-                            {
-                                return new JsonResult(new ApiResponse<string>
-                                {
-                                    Result = false,
-                                    Message = "Invalid file type. Please upload only image and video files.",
-                                    StatusCode = HttpStatusCode.BadRequest.ToString(),
-                                });
-                            }
-                        }
-
-                        if (!hasImage || !hasVideo)
-                        {
-                            return new JsonResult(new ApiResponse<string>
-                            {
-                                Result = false,
-                                Message = "Please upload one image and one video",
-                                StatusCode = HttpStatusCode.BadRequest.ToString(),
-                            });
-                        }
-                        else
-                        {
-                            foreach (var file in model.Images)
-                            {
-                                string extension = Path.GetExtension(file.FileName).ToLower();
-
-                                if (ImageExtensions.Contains(extension))
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        await file.CopyToAsync(memoryStream);
-                                        missionMedia.Image = memoryStream.ToArray();
-                                    }
-                                }
-                                else if (VideoExtensions.Contains(extension))
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        await file.CopyToAsync(memoryStream);
-                                        mission.MissionVideo = memoryStream.ToArray();
-                                    }
-                                }
-                                else
-                                {
-                                    return new JsonResult(new ApiResponse<string>
-                                    {
-                                        Result = false,
-                                        Message = "Invalid file type. Please upload only image and video files.",
-                                        StatusCode = HttpStatusCode.BadRequest.ToString(),
-                                    });
-                                }
-                            }
-                        }
-                        await _userRepo.AddMission(mission);
-                        missionMedia.MissionId = mission.MissionId;
-
-                        if (model.MissionSkill.Any())
-                        {
-                            List<MissionSkill> missionSkills = new();
-                            foreach (var skill in model.MissionSkill)
-                            {
-                                MissionSkill missionSkill = new()
-                                {
-                                    MissionId = mission.MissionId,
-                                    SkillId = skill
-                                };
-                                missionSkills.Add(missionSkill);
-                            }
-                            await _userRepo.AddMissionSkills(missionSkills);
-                        }
-
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            await model.Document[0].CopyToAsync(memoryStream);
-                            missionMedia.Document = memoryStream.ToArray();
-                        }
-                        await _userRepo.AddMissionMedia(missionMedia);
-                        transaction.Commit();
-                        return new JsonResult(new ApiResponse<string>
-                        {
-                            Result = true,
-                            Message = "Mission created successfully",
-                            StatusCode = HttpStatusCode.OK.ToString(),
-                        });
-                    }
-
-
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    return new JsonResult(new ApiResponse<string>
-                    {
-                        Result = false,
-                        Message = "Internal server error: " + ex.Message,
-                        StatusCode = HttpStatusCode.InternalServerError.ToString(),
-                    });
-                }
-
-        }
-        public async Task<JsonResult> GetAllMissions(MissionFilter model)
-        {
-            try
-            {
-                if (!Enum.IsDefined(typeof(SortingOption), model.SortingOption))
-                {
-                    return new JsonResult(new ApiResponse<string>
-                    {
-                        Result = false,
-                        Message = "Bad request",
-                        StatusCode = HttpStatusCode.BadRequest.ToString(),
-                    });
-                }
-                var missions = await _userRepo.GetAllMissions(model);
-                //switch (model.SortingOption)
-                //{
-                //    case 1:
-                //        missions = missions.OrderByDescending(x => x.CreatedAt).ToList(); break;
-                //    case 2:
-                //        missions = missions.OrderBy(x => x.CreatedAt).ToList(); break;
-                //    case 3:
-                //        missions = missions.OrderBy(x => x.TotalSeats - x.OccupiedSeats).ToList(); break;
-                //    case 4:
-                //        missions = missions.OrderByDescending(x => x.TotalSeats - x.OccupiedSeats).ToList(); break;
-                //    case 5:
-                //        var result = missions.Where(x => x.UserMissions.First().Favourite == 1).ToList();
-                //        var result2 = missions.Where(x => x.UserMissions.First().Favourite == 0).ToList();
-                //        missions = result;
-                //        missions.AddRange(result2);
-                //        break;
-                //    case 6:
-                //        missions = missions.Where(x => x.MissionRegistrationDeadline > DateOnly.FromDateTime(DateTime.Now)).OrderBy(x => x.MissionRegistrationDeadline.ToDateTime(new TimeOnly(0, 0)) - DateTime.Now).ToList(); break;
-                //        //var query = missions.GroupBy(x => x.UserMissions.FirstOrDefault().Favourite, x => x, (value, ids) => new
-                //        //{
-                //        //    key = value,
-                //        //    list = ids
-                //        //});
-                //        //missions = new List<Mission>();
-                //        //foreach (var result in query)
-                //        //{
-                //        //    missions = missions.AddRange(result.list);
-                //        //}
-
-                //}
-
-                //var modelMissions = _mapper.Map<List<Missions>>(missions);
-
-                return new JsonResult(new ApiResponse<ICollection<Missions>>
-                {
-                    Data = missions,
-                    Result = true,
-                    Message = "",
-                    StatusCode = HttpStatusCode.OK.ToString(),
-                });
-            }
-            catch
-            {
-                return new JsonResult(new ApiResponse<string>
-                {
-                    Result = false,
-                    Message = "Internal server error",
-                    StatusCode = HttpStatusCode.InternalServerError.ToString(),
-                });
-            }
-        }
-
-
     }
 }
