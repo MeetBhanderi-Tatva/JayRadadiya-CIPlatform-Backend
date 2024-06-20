@@ -66,8 +66,12 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AppDbContext>(option => option.UseNpgsql("name=ConnectionStrings:DefaultConnection"));
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IMissionRepository, MissionRepository>();
+builder.Services.AddScoped<ICityRepository, CityRepository>();
+
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddHttpClient<IUserService, UserService>();
+builder.Services.AddScoped<IMissionService, MissionService>();
 
 builder.Services.Configure<EmailSetting>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddAutoMapper(typeof(MappingProfile));

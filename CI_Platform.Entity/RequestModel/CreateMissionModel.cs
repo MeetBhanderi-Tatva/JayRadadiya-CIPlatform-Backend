@@ -33,11 +33,14 @@ namespace CI_Platform.Entity.RequestModel
         [Required]
         public string MissionOrganisationDetail { get; set; } = null!;
 
-        [RequiredIfMissionType(1)]
-        public DateOnly MissionStartDate { get; set; }
+        [Required]
+        public int MissionType { get; set; }
 
         [RequiredIfMissionType(1)]
-        public DateOnly MissionEndDate { get; set; }
+        public DateOnly? MissionStartDate { get; set; }
+
+        [RequiredIfMissionType(1)]
+        public DateOnly? MissionEndDate { get; set; }
 
         [Required]
         public int TotalSeats { get; set; }
@@ -49,7 +52,7 @@ namespace CI_Platform.Entity.RequestModel
         public string? GoalObject { get; set; }
 
         [RequiredIfMissionType(1)]
-        public DateOnly MissionRegistrationDeadline { get; set; }
+        public DateOnly? MissionRegistrationDeadline { get; set; }
 
         [Required]
         public int ThemeId { get; set; }

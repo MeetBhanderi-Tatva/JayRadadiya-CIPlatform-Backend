@@ -15,10 +15,8 @@ namespace CI_Platform.Repository
     public class CityRepository : ICityRepository
     {
         private readonly AppDbContext _context;
-        private readonly string? _connectionString;
-        public CityRepository(AppDbContext context, IConfiguration configuration)
+        public CityRepository(AppDbContext context)
         {
-            _connectionString = configuration.GetConnectionString("DefaultConnection");
             _context = context;
         }
         public async Task<ICollection<CityViewModel>> GetCitiesByCountry(int countryId)
