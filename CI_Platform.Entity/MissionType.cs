@@ -11,17 +11,13 @@ namespace CI_Platform.Entity
     public class MissionType
     {
         [Key]
-        [MaxLength(20)]
-        public Int64 Id { get; set; }
+        [MaxLength(10)]
+        public int Id { get; set; }
 
         [Required]
-        [ForeignKey("Mission")]
-        public Int64 MissionId { get; set; }
+        public string Type { get; set; } = null!;
 
-        [Required]
-        public string Type { get; set; }
-
-        public Mission Mission { get; set; }
+        public ICollection<Mission> Missions { get; set; } = new HashSet<Mission>();
 
     }
 }

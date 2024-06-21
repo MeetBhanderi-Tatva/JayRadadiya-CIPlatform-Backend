@@ -31,6 +31,10 @@ namespace CI_Platform.Service
     {
         ".mp4", ".mov", ".wmv", ".flv", ".avi", ".mkv", ".webm", ".mpeg", ".mpg", ".m4v"
     };
+        private static readonly HashSet<string> DocumentExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ".pdf", ".doc"
+    };
         public MissionService(IMissionRepository missionRepository, IMapper mapper, IHttpContextAccessor httpContextAccessor, ICityRepository ciryRepo)
         {
             _missionRepo = missionRepository;
@@ -38,12 +42,12 @@ namespace CI_Platform.Service
             _httpContextAccessor = httpContextAccessor;
             _ciryRepo = ciryRepo;
         }
-        public string GetUserId()
+        public int GetUserId()
         {
             try
             {
                 var user = _httpContextAccessor.HttpContext?.User;
-                return user?.FindFirst("userId")?.Value;
+                return int.Parse(user?.FindFirst("userId")?.Value!);
             }
             catch (Exception)
             {
@@ -116,121 +120,89 @@ namespace CI_Platform.Service
                 try
                 {
                     Mission mission = _mapper.Map<Mission>(model);
-                    MissionMedia missionMedia = new();
-                    // Check if exactly 2 files are uploaded
-                    if (model.Images.Count != 2)
+                    List<MissionMedia> missionMedias = new();
+                    if (model.Images?.Count != 0)
                     {
-                        return new JsonResult(new ApiResponse<string>
-                        {
-                            Result = false,
-                            Message = "Please upload one image and one video",
-                            StatusCode = HttpStatusCode.BadRequest.ToString(),
-                        });
-                    }
-                    else
-                    {
-                        bool hasImage = false;
-                        bool hasVideo = false;
-
-                        foreach (var file in model.Images)
+                        foreach (var file in model.Images!)
                         {
                             string extension = Path.GetExtension(file.FileName).ToLower();
 
                             if (ImageExtensions.Contains(extension))
                             {
-                                hasImage = true;
-                            }
-                            else if (VideoExtensions.Contains(extension))
-                            {
-                                hasVideo = true;
+                                using (var memoryStream = new MemoryStream())
+                                {
+                                    await file.CopyToAsync(memoryStream);
+                                    MissionMedia missionMedia = new();
+                                    missionMedia.Image = memoryStream.ToArray();
+                                    missionMedias.Add(missionMedia);
+                                }
                             }
                             else
                             {
                                 return new JsonResult(new ApiResponse<string>
                                 {
                                     Result = false,
-                                    Message = "Invalid file type. Please upload only image and video files.",
+                                    Message = "Please upload image files only",
                                     StatusCode = HttpStatusCode.BadRequest.ToString(),
                                 });
                             }
                         }
-
-                        if (!hasImage || !hasVideo)
+                    }
+                    if (model.Document?.Count != 0)
+                    {
+                        foreach (var file in model.Document!)
                         {
-                            return new JsonResult(new ApiResponse<string>
-                            {
-                                Result = false,
-                                Message = "Please upload one image and one video",
-                                StatusCode = HttpStatusCode.BadRequest.ToString(),
-                            });
-                        }
-                        else
-                        {
-                            foreach (var file in model.Images)
-                            {
-                                string extension = Path.GetExtension(file.FileName).ToLower();
+                            string extension = Path.GetExtension(file.FileName).ToLower();
 
-                                if (ImageExtensions.Contains(extension))
+                            if (DocumentExtensions.Contains(extension))
+                            {
+                                using (var memoryStream = new MemoryStream())
                                 {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        await file.CopyToAsync(memoryStream);
-                                        missionMedia.Image = memoryStream.ToArray();
-                                    }
-                                }
-                                else if (VideoExtensions.Contains(extension))
-                                {
-                                    using (var memoryStream = new MemoryStream())
-                                    {
-                                        await file.CopyToAsync(memoryStream);
-                                        mission.MissionVideo = memoryStream.ToArray();
-                                    }
-                                }
-                                else
-                                {
-                                    return new JsonResult(new ApiResponse<string>
-                                    {
-                                        Result = false,
-                                        Message = "Invalid file type. Please upload only image and video files.",
-                                        StatusCode = HttpStatusCode.BadRequest.ToString(),
-                                    });
+                                    await file.CopyToAsync(memoryStream);
+                                    MissionMedia missionMedia = new();
+                                    missionMedia.Document = memoryStream.ToArray();
+                                    missionMedias.Add(missionMedia);
                                 }
                             }
-                        }
-                        await _missionRepo.AddMission(mission);
-                        missionMedia.MissionId = mission.MissionId;
-
-                        if (model.MissionSkill.Any())
-                        {
-                            List<MissionSkill> missionSkills = new();
-                            foreach (var skill in model.MissionSkill)
+                            else
                             {
-                                MissionSkill missionSkill = new()
+                                return new JsonResult(new ApiResponse<string>
                                 {
-                                    MissionId = mission.MissionId,
-                                    SkillId = skill
-                                };
-                                missionSkills.Add(missionSkill);
+                                    Result = false,
+                                    Message = "Please upload pdf and doc file",
+                                    StatusCode = HttpStatusCode.BadRequest.ToString(),
+                                });
                             }
-                            await _missionRepo.AddMissionSkills(missionSkills);
                         }
-
-                        using (var memoryStream = new MemoryStream())
-                        {
-                            await model.Document[0].CopyToAsync(memoryStream);
-                            missionMedia.Document = memoryStream.ToArray();
-                        }
-                        await _missionRepo.AddMissionMedia(missionMedia);
-                        transaction.Commit();
-                        return new JsonResult(new ApiResponse<string>
-                        {
-                            Result = true,
-                            Message = "Mission created successfully",
-                            StatusCode = HttpStatusCode.OK.ToString(),
-                        });
                     }
 
-
+                    await _missionRepo.AddMission(mission);
+                    foreach (var missionMedia in missionMedias)
+                    {
+                        missionMedia.MissionId = mission.MissionId;
+                    }
+                    if (model.MissionSkill.Any())
+                    {
+                        List<MissionSkill> missionSkills = new();
+                        foreach (var skill in model.MissionSkill)
+                        {
+                            MissionSkill missionSkill = new()
+                            {
+                                MissionId = mission.MissionId,
+                                SkillId = skill
+                            };
+                            missionSkills.Add(missionSkill);
+                        }
+                        await _missionRepo.AddMissionSkills(missionSkills);
+                    }
+                    await _missionRepo.AddMissionMedia(missionMedias);
+                    transaction.Commit();
+                    return new JsonResult(new ApiResponse<string>
+                    {
+                        Result = true,
+                        Message = "Mission created successfully",
+                        StatusCode = HttpStatusCode.OK.ToString(),
+                    });
                 }
                 catch (Exception ex)
                 {
@@ -248,49 +220,8 @@ namespace CI_Platform.Service
         {
             try
             {
-                if (!Enum.IsDefined(typeof(SortingOption), model.SortingOption))
-                {
-                    return new JsonResult(new ApiResponse<string>
-                    {
-                        Result = false,
-                        Message = "Bad request",
-                        StatusCode = HttpStatusCode.BadRequest.ToString(),
-                    });
-                }
-                var missions = await _missionRepo.GetAllMissions(model);
-                //switch (model.SortingOption)
-                //{
-                //    case 1:
-                //        missions = missions.OrderByDescending(x => x.CreatedAt).ToList(); break;
-                //    case 2:
-                //        missions = missions.OrderBy(x => x.CreatedAt).ToList(); break;
-                //    case 3:
-                //        missions = missions.OrderBy(x => x.TotalSeats - x.OccupiedSeats).ToList(); break;
-                //    case 4:
-                //        missions = missions.OrderByDescending(x => x.TotalSeats - x.OccupiedSeats).ToList(); break;
-                //    case 5:
-                //        var result = missions.Where(x => x.UserMissions.First().Favourite == 1).ToList();
-                //        var result2 = missions.Where(x => x.UserMissions.First().Favourite == 0).ToList();
-                //        missions = result;
-                //        missions.AddRange(result2);
-                //        break;
-                //    case 6:
-                //        missions = missions.Where(x => x.MissionRegistrationDeadline > DateOnly.FromDateTime(DateTime.Now)).OrderBy(x => x.MissionRegistrationDeadline.ToDateTime(new TimeOnly(0, 0)) - DateTime.Now).ToList(); break;
-                //        //var query = missions.GroupBy(x => x.UserMissions.FirstOrDefault().Favourite, x => x, (value, ids) => new
-                //        //{
-                //        //    key = value,
-                //        //    list = ids
-                //        //});
-                //        //missions = new List<Mission>();
-                //        //foreach (var result in query)
-                //        //{
-                //        //    missions = missions.AddRange(result.list);
-                //        //}
-
-                //}
-
-                //var modelMissions = _mapper.Map<List<Missions>>(missions);
-
+                var userId = GetUserId();
+                var missions = await _missionRepo.GetAllMissions(model,userId);
                 return new JsonResult(new ApiResponse<ICollection<Missions>>
                 {
                     Data = missions,

@@ -3,6 +3,7 @@ using System;
 using CI_Platform.Entity.DBContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CI_Platform.Entity.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240620085245_mission-update")]
+    partial class missionupdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -338,8 +341,6 @@ namespace CI_Platform.Entity.Migrations
 
                     b.HasIndex("CountryId");
 
-                    b.HasIndex("MissionType");
-
                     b.HasIndex("ThemeId");
 
                     b.ToTable("Mission");
@@ -433,18 +434,23 @@ namespace CI_Platform.Entity.Migrations
 
             modelBuilder.Entity("CI_Platform.Entity.MissionType", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasMaxLength(10)
-                        .HasColumnType("integer");
+                        .HasMaxLength(20)
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("MissionId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MissionId");
 
                     b.ToTable("MissionType");
                 });
@@ -788,12 +794,6 @@ namespace CI_Platform.Entity.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("CI_Platform.Entity.MissionType", "Type")
-                        .WithMany("Missions")
-                        .HasForeignKey("MissionType")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("CI_Platform.Entity.Theme", "Theme")
                         .WithMany("Missions")
                         .HasForeignKey("ThemeId")
@@ -805,8 +805,6 @@ namespace CI_Platform.Entity.Migrations
                     b.Navigation("Country");
 
                     b.Navigation("Theme");
-
-                    b.Navigation("Type");
                 });
 
             modelBuilder.Entity("CI_Platform.Entity.MissionApplication", b =>
@@ -856,6 +854,17 @@ namespace CI_Platform.Entity.Migrations
                     b.Navigation("Mission");
 
                     b.Navigation("Skill");
+                });
+
+            modelBuilder.Entity("CI_Platform.Entity.MissionType", b =>
+                {
+                    b.HasOne("CI_Platform.Entity.Mission", "Mission")
+                        .WithMany("MissionTypes")
+                        .HasForeignKey("MissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Mission");
                 });
 
             modelBuilder.Entity("CI_Platform.Entity.RecentVolunteer", b =>
@@ -968,6 +977,8 @@ namespace CI_Platform.Entity.Migrations
 
                     b.Navigation("MissionSkills");
 
+                    b.Navigation("MissionTypes");
+
                     b.Navigation("RecentVolunteers");
 
                     b.Navigation("StoryMedia");
@@ -975,11 +986,6 @@ namespace CI_Platform.Entity.Migrations
                     b.Navigation("UserMissions");
 
                     b.Navigation("VolunteeringTimesheets");
-                });
-
-            modelBuilder.Entity("CI_Platform.Entity.MissionType", b =>
-                {
-                    b.Navigation("Missions");
                 });
 
             modelBuilder.Entity("CI_Platform.Entity.Skill", b =>

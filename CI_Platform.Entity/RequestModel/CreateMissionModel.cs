@@ -19,18 +19,24 @@ namespace CI_Platform.Entity.RequestModel
         public Int64 CityId { get; set; }
 
         [Required]
+        [MaxLength(128)]
+
         public string MissionTitle { get; set; } = null!;
 
         [Required]
+        [MaxLength(256)]
         public string MissionShortDescription { get; set; } = null!;
 
         [Required]
+        [MaxLength(2048)]
         public string MissionDescription { get; set; } = null!;
 
         [Required]
+        [MaxLength(50)]
         public string MissionOrganisationName { get; set; } = null!;
 
         [Required]
+        [MaxLength(2048)]
         public string MissionOrganisationDetail { get; set; } = null!;
 
         [Required]
@@ -43,9 +49,11 @@ namespace CI_Platform.Entity.RequestModel
         public DateOnly? MissionEndDate { get; set; }
 
         [Required]
+        [Range(0, Int32.MaxValue)]
         public int TotalSeats { get; set; }
 
         [RequiredIfMissionType(1)]
+        [Range(0, Int32.MaxValue)]
         public int TotalGoal { get; set; }
 
         [RequiredIfMissionType(2)]
@@ -84,8 +92,8 @@ namespace CI_Platform.Entity.RequestModel
             {
                 return new ValidationResult($"MissionType property not found on {validationContext.ObjectType.FullName}");
             }
-
-            var missionTypeValue =int.Parse(missionTypeProperty.GetValue(validationContext.ObjectInstance) as string ?? "0");
+            var mission = (CreateMissionModel)validationContext.ObjectInstance;
+            var missionTypeValue = mission.MissionType;
             if (missionTypeValue == _missionType && value == null)
             {
                 return new ValidationResult($"{validationContext.DisplayName} is required when MissionType is {_missionType}");

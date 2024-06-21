@@ -18,14 +18,15 @@ namespace CI_Platform.Entity
 
         [Required]
         [MaxLength(128)]
-        public string MissionTitle { get; set; }
+        public string MissionTitle { get; set; } = null!;
 
+        [Required]
         [MaxLength(256)]
-        public string? MissionShortDescription { get; set; }
+        public string? MissionShortDescription { get; set; } = null!;
 
         [Required]
         [MaxLength(2048)]
-        public string MissionDescription { get; set; }
+        public string MissionDescription { get; set; } = null!;
 
         [Required]
         [MaxLength(20)]
@@ -45,22 +46,20 @@ namespace CI_Platform.Entity
 
         [Required]
         [MaxLength(50)]
-        public string MissionOrganisationName { get; set; }
+        public string MissionOrganisationName { get; set; } = null!;
         [Required]
         [MaxLength(2048)]
-        public string MissionOrganisationDetail{ get; set; }
+        public string MissionOrganisationDetail{ get; set; } = null!;
 
-        [Required]
         [Column(TypeName = "date")]
-        public DateOnly MissionStartDate { get; set; }
+        public DateOnly? MissionStartDate { get; set; }
 
-        [Required]
         [Column(TypeName = "date")]
-        public DateOnly MissionEndDate { get; set; }
+        public DateOnly? MissionEndDate { get; set; }
 
 
         [Required]
-        [MaxLength(50)]
+        [ForeignKey("Type")]
         public int MissionType { get; set; }
 
         [Required]
@@ -69,8 +68,7 @@ namespace CI_Platform.Entity
 
         [MaxLength(10)]
         public int OccupiedSeats { get; set; }
-        
-        [Required]
+
         [MaxLength(10)]
         public int TotalGoal { get; set; }
 
@@ -85,9 +83,9 @@ namespace CI_Platform.Entity
         [MaxLength(50)]
         public int? MissionRatingCount { get; set; }
 
-        [Required]
+
         [Column(TypeName = "date")]
-        public DateOnly MissionRegistrationDeadline { get; set; }
+        public DateOnly? MissionRegistrationDeadline { get; set; }
 
         [Required]
         public int MissionAvailability { get; set; }
@@ -105,24 +103,24 @@ namespace CI_Platform.Entity
         [Column(TypeName = "timestamp without time zone")]
         public DateTime? DeletedAt { get; set; }
 
-        public ICollection<MissionMedia> MissionMedias { get; set; }
-        public ICollection<MissionApplication> MissionApplications { get; set; }
-        public ICollection<RecentVolunteer> RecentVolunteers { get; set; }
+        public ICollection<MissionMedia> MissionMedias { get; set; } = new HashSet<MissionMedia>();
+        public ICollection<MissionApplication> MissionApplications { get; set; } = new HashSet<MissionApplication>();    
+        public ICollection<RecentVolunteer> RecentVolunteers { get; set; } = new HashSet<RecentVolunteer>();
 
-        public ICollection<VolunteeringTimesheet> VolunteeringTimesheets { get; set; }
+        public ICollection<VolunteeringTimesheet> VolunteeringTimesheets { get; set; } = new HashSet<VolunteeringTimesheet>();
 
-        public ICollection<StoryMedia> StoryMedia { get; set; }
+        public ICollection<StoryMedia> StoryMedia { get; set; } = new HashSet<StoryMedia>();
 
-        public ICollection<UserMission> UserMissions { get; set; }
+        public ICollection<UserMission> UserMissions { get; set; } = new HashSet<UserMission>();
 
-        public ICollection<MissionSkill> MissionSkills { get; set; }
+        public ICollection<MissionSkill> MissionSkills { get; set; } = new HashSet<MissionSkill>();
+            
+        public City City { get; set; } = null!;
 
-        public ICollection<MissionType> MissionTypes { get; set; }
+        public Country Country { get; set; } = null!;
 
-        public City City { get; set; }
+        public Theme Theme { get; set; } = null!;
 
-        public Country Country { get; set; }
-
-        public Theme Theme { get; set; }
+        public MissionType Type { get; set; } = null!;
     }
 }

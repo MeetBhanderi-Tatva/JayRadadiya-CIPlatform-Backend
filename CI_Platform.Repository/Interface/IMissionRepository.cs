@@ -24,11 +24,11 @@ namespace CI_Platform.Repository.Interface
 
         Task AddMission(Mission mission);
 
-        Task AddMissionMedia(MissionMedia missionMedia);
+        Task AddMissionMedia(List<MissionMedia> missionMedias);
 
         Task<Country?> GetCountryByName(string? name);
 
-        Task<List<Missions>> GetAllMissions(MissionFilter model);
+        Task<List<Missions>> GetAllMissions(MissionFilter model,int userId);
 
         Task AddMissionSkills(List<MissionSkill> missionSkills);
     }

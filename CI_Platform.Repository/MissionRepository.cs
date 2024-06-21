@@ -110,11 +110,11 @@ namespace CI_Platform.Repository
             }
         }
 
-        public async Task AddMissionMedia(MissionMedia missionMedia)
+        public async Task AddMissionMedia(List<MissionMedia> missionMedias)
         {
             try
             {
-                await _context.MissionMedias.AddAsync(missionMedia);
+                await _context.MissionMedias.AddRangeAsync(missionMedias);
                 await _context.SaveChangesAsync();
             }
             catch(Exception)
@@ -154,7 +154,7 @@ namespace CI_Platform.Repository
             }
         }
 
-        public async Task<List<Missions>> GetAllMissions(MissionFilter model)
+        public async Task<List<Missions>> GetAllMissions(MissionFilter model,int userId)
         {
             try
             {
@@ -164,6 +164,7 @@ namespace CI_Platform.Repository
 
                     var parameters = new
                     {
+                        user_id = userId,
                         search_value = model.SerachValue ?? (object)DBNull.Value,
                         city_ids = model.Cities?.Count > 0 ? (object)model.Cities.ToArray() : DBNull.Value,
                         country_id = model.Country,
@@ -172,7 +173,7 @@ namespace CI_Platform.Repository
                         sorting_option = model.SortingOption
                     };
 
-                    var sql = "SELECT * FROM GetMissions(@search_value, @city_ids, @country_id, @theme_ids, @skill_ids, @sorting_option)";
+                    var sql = "SELECT * FROM GetMissions(@user_id, @search_value, @city_ids, @country_id, @theme_ids, @skill_ids, @sorting_option)";
 
                     var missions = (await connection.QueryAsync<Missions>(sql, parameters)).ToList();
 

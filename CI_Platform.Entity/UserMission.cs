@@ -43,7 +43,7 @@ namespace CI_Platform.Entity
         public int UserStatus { get; set; } = 1;
 
         [Required]
-        public int Favourite { get; set; } = 0;
+        public bool Favourite { get; set; } = false;
 
         public Mission Mission { get; set; }
         public User User { get; set; }

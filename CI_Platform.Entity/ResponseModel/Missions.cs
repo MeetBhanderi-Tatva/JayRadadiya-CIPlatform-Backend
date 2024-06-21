@@ -10,21 +10,25 @@ namespace CI_Platform.Entity.ResponseModel
 {
     public class Missions
     {
-        public int MissionId { get; set; }
+        public Int64 MissionId { get; set; }
 
         public string? MissionTitle { get; set; }
 
         public string? MissionShortDescription { get; set; }
 
-        public string MissionDescription { get; set; }
+        public string? MissionDescription { get; set; }
 
-        public string City { get; set; }
+        public Int64 CityId { get; set; }
 
-        public string MissionOrganisationName { get; set; }
+        public int ThemeId { get; set; }
 
-        public DateTime MissionStartDate { get; set; }
+        public string? MissionOrganisationName { get; set; }
 
-        public DateTime MissionEndDate { get; set; }
+        public int MissionType { get; set; }
+
+        public DateTime? MissionStartDate { get; set; }
+
+        public DateTime? MissionEndDate { get; set; }
 
         public int TotalSeats { get; set; }
 
@@ -34,9 +38,12 @@ namespace CI_Platform.Entity.ResponseModel
         public int TotalGoal { get; set; }
         public int? MissionRating { get; set; }
 
-        public DateTime MissionRegistrationDeadline { get; set; }
+        public string? GoalObject { get; set; }
+        public DateTime? MissionRegistrationDeadline { get; set; }
 
-        public byte[] Image { get; set; }
+        public byte[]? Image { get; set; }
+
+        public int Favourite {  get; set; }
 
     }
 }
